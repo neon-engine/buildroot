@@ -8,6 +8,8 @@ TOOLCHAIN_REPO=https://github.com/neon-engine/buildroot
 TOOLCHAIN_BRANCH=2024.02.x
 
 ERR_OPTIONS=1
+ERR_CANCEL=2
+ERR_TARGET_NOT_SUPPORTED=3
 ERR_CANCEL_REBUILD=4
 
 trap 'echo "build interrupted"; exit' SIGINT
@@ -35,12 +37,12 @@ EOF
 }
 
 function ask_yes_or_no() {
-    read -rp "$1 [Yn]: "
-    case $(echo "$REPLY" | tr "[:upper:]" "[:lower:]") in
-        y|yes) echo "yes" ;;
-        n|no)  echo "no"  ;;
-        *)     echo "yes"   ;;
-    esac
+  read -rp "$1 [Yn]: "
+  case $(echo "$REPLY" | tr "[:upper:]" "[:lower:]") in
+      y|yes) echo "yes" ;;
+      n|no)  echo "no"  ;;
+      *)     echo "yes"   ;;
+  esac
 }
 
 FORCE_REBUILD=
@@ -79,8 +81,8 @@ echo ""
 if [[ -z "${FORCE_REBUILD}" ]]; then
   response=$(ask_yes_or_no "Would you like to proceed?")
   if [[ "${response}" = "no" ]]; then
-    echo "Exiting script, not rebuilding ${TARGET_SDK_LOCATION}"
-    exit "${ERR_CANCEL_REBUILD}"
+    echo "Operation cancelled, exiting!"
+    exit "${ERR_CANCEL}"
   fi
 fi
 
@@ -90,10 +92,9 @@ if [[ -d "${TARGET_SDK_LOCATION}" ]] && [[ -n "${FORCE_REBUILD}" ]]; then
 fi
 
 if [[ -d "${TARGET_SDK_LOCATION}" ]]; then
-  response=$(ask_yes_or_no "Found ${TARGET_SDK_LOCATION}, would you like to rebuild it?")
-  if [[ "${response}" = "no" ]]; then
-    echo "Exiting script, not rebuilding ${TARGET_SDK_LOCATION}"
-    exit "${ERR_CANCEL_REBUILD}"
+  response=$(ask_yes_or_no "Found ${TARGET_SDK_LOCATION}, keep it?")
+  if [[ "${response}" = "yes" ]]; then
+    echo "keeping the existing toolchain, will overwrite new files"
   else
     rm -rf "${TARGET_SDK_LOCATION}"
   fi
@@ -110,7 +111,7 @@ if [[ ! -d "${TARGET_SDK_LOCATION}" ]]; then
 fi
 
 if [[ "${BUILD_TARGET}" == "linux" ]]; then
-  podman build -t neon-sdk-builder -f neon-sdk-builder.dockerfile
+  podman build -t neon-sdk-builder -f $(dirname "${0}")/neon-sdk-builder.dockerfile
   podman run -i --rm \
     -v "${TARGET_SDK_LOCATION}:/sdk:z" \
     -e FORCE_UNSAFE_CONFIGURE=1 \
@@ -124,4 +125,8 @@ if [[ "${BUILD_TARGET}" == "linux" ]]; then
       make sdk;
       rsync -a --progress --delete --delete-delay --prune-empty-dirs /build/output/host/ /sdk/;
     "
+    "${TARGET_SDK_LOCATION}/relocate-sdk.sh"
+else
+  echo "The target ${BUILD_TARGET} is not supported"
+  exit "${ERR_TARGET_NOT_SUPPORTED}"
 fi
