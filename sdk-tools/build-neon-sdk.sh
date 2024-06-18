@@ -7,13 +7,16 @@ BUILD_TARGET=linux
 TOOLCHAIN_REPO=https://github.com/neon-engine/buildroot
 TOOLCHAIN_BRANCH=2024.02.x
 
+ERR_OPTIONS=1
+ERR_CANCEL_REBUILD=4
+
 trap 'echo "build interrupted"; exit' SIGINT
 
 OPTIONS=$(getopt -o "" --long "help,arch:,force" -n "$0" -- "$@")
 # shellcheck disable=SC2181
 if [ $? -ne 0 ]; then
   echo "error setting OPTIONS"
-  exit 1
+  exit ${ERR_OPTIONS}
 fi
 
 eval set -- "${OPTIONS}"
@@ -40,12 +43,6 @@ function ask_yes_or_no() {
     esac
 }
 
-if [[ ! -d ./sdk ]]; then
-  echo "no such sdk folder, make sure you are in the correct directory: <src>/tools/neon-sdk-builder.dockerfile"
-  exit 2
-fi
-
-ERROR=
 FORCE_REBUILD=
 while true; do
   case "$1" in
@@ -55,10 +52,6 @@ while true; do
       ;;
     --arch)
       BUILD_ARCH=$2
-      if [[ -z "${BUILD_ARCH}" ]]; then
-        echo "--arch needs a value, supported values are: x86_64"
-        ERROR=true
-      fi
       shift 2
       ;;
     --force)
@@ -74,10 +67,6 @@ while true; do
       ;;
   esac
 done
-
-if [[ -n "${ERROR}" ]]; then
-  exit 3
-fi
 
 TARGET_SDK_LOCATION="/opt/neon-sdk/${BUILD_ARCH}-${BUILD_TARGET}"
 
@@ -101,7 +90,7 @@ if [[ -z "${FORCE_REBUILD}" ]]; then
   response=$(ask_yes_or_no "Would you like to proceed?")
   if [[ "${response}" = "no" ]]; then
     echo "Exiting script, not rebuilding ${TARGET_SDK_LOCATION}"
-    exit 4
+    exit "${ERR_CANCEL_REBUILD}"
   fi
 fi
 
@@ -114,7 +103,7 @@ if [[ -d "${TARGET_SDK_LOCATION}" ]]; then
   response=$(ask_yes_or_no "Found ${TARGET_SDK_LOCATION}, would you like to rebuild it?")
   if [[ "${response}" = "no" ]]; then
     echo "Exiting script, not rebuilding ${TARGET_SDK_LOCATION}"
-    exit 5
+    exit "${ERR_CANCEL_REBUILD}"
   else
     rm -rf "${TARGET_SDK_LOCATION}"
   fi
