@@ -70,16 +70,6 @@ done
 
 TARGET_SDK_LOCATION="/opt/neon-sdk/${BUILD_ARCH}-${BUILD_TARGET}"
 
-if [[ ! -d "/opt/neon-sdk" ]]; then
-  sudo mkdir /opt/neon-sdk
-  # add the sticky bit so only root and owners can delete files
-  sudo chmod 1777 /opt/neon-sdk
-fi
-
-if [[ ! -d "${TARGET_SDK_LOCATION}" ]]; then
-  mkdir -p "${TARGET_SDK_LOCATION}"
-fi
-
 echo "Building SDK for:"
 echo "Platform: ${BUILD_TARGET}"
 echo "Arch: ${BUILD_ARCH}"
@@ -109,7 +99,15 @@ if [[ -d "${TARGET_SDK_LOCATION}" ]]; then
   fi
 fi
 
-mkdir -p "${TARGET_SDK_LOCATION}"
+if [[ ! -d "/opt/neon-sdk" ]]; then
+  sudo mkdir /opt/neon-sdk
+  # add the sticky bit so only root and owners can delete files
+  sudo chmod 1777 /opt/neon-sdk
+fi
+
+if [[ ! -d "${TARGET_SDK_LOCATION}" ]]; then
+  mkdir -p "${TARGET_SDK_LOCATION}"
+fi
 
 if [[ "${BUILD_TARGET}" == "linux" ]]; then
   podman build -t neon-sdk-builder -f neon-sdk-builder.dockerfile
