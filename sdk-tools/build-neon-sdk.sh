@@ -110,16 +110,20 @@ if [[ ! -d "${TARGET_SDK_LOCATION}" ]]; then
   mkdir -p "${TARGET_SDK_LOCATION}"
 fi
 
+BUILDROOT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/.."
+
 if [[ "${BUILD_TARGET}" == "linux" ]]; then
   podman build -t neon-sdk-builder -f $(dirname "${0}")/neon-sdk-builder.dockerfile
   podman run -i --rm \
     -v "${TARGET_SDK_LOCATION}:/sdk:z" \
+    -v "${BUILDROOT_ROOT}:/build:z" \
     -e FORCE_UNSAFE_CONFIGURE=1 \
     -e HOME=/home \
     --userns=keep-id \
+    -w /build \
     neon-sdk-builder:latest -c "
-      git clone -b ${TOOLCHAIN_BRANCH} ${TOOLCHAIN_REPO} /build;
-      cd /build;
+      make clean
+      rm -f .config
       cp neon-${BUILD_ARCH}.config .config;
       make syncconfig;
       make sdk;
