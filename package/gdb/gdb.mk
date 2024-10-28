@@ -256,7 +256,6 @@ endif
 #    those libraries in $(HOST_DIR), as it might clash with binutils
 HOST_GDB_CONF_OPTS = \
 	--target=$(GNU_TARGET_NAME) \
-	--enable-targets=all \
 	--enable-static \
 	--disable-shared \
 	--without-uiout \
