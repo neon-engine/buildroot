@@ -10,7 +10,6 @@ RUN dnf update -y \
     && dnf config-manager --set-enabled powertools \
     && dnf install -y epel-release \
     && dnf install -y \
-        @development-tools \
         which \
         glm-devel \
         cmake \
@@ -25,23 +24,21 @@ RUN dnf update -y \
         libXrandr-devel \
         xcb-util-keysyms-devel \
         xcb-util-wm-devel \
-        python \
         python3 \
         git \
         lz4-devel \
         libzstd-devel \
         python3-distutils-extra \
-        qt \
-        gcc-g++ \
         wayland-protocols-devel \
         ninja-build \
         python3-jsonschema \
         qt5-qtbase-devel \
-        python-unversioned-command \
         python3-setuptools \
         clang-tools-extra \
+        wget \
+        tar \
     && dnf clean all \
-    && mkdir -p /opt/build /opt/sdk \
+    && mkdir -p /opt/sdk \
     && echo ${OS_VERSION} > /etc/version_id
 
 ENTRYPOINT [ "/bin/bash" ]

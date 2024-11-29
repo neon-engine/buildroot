@@ -6,6 +6,7 @@ BUILD_ARCH=x86_64
 BUILD_TARGET=linux
 TOOLCHAIN_REPO=https://github.com/neon-engine/buildroot
 TOOLCHAIN_BRANCH=2024.02.x
+VULKAN_SDK_VERSION=1.3.296
 
 ERR_OPTIONS=1
 ERR_CANCEL=2
@@ -34,6 +35,22 @@ function help() {
     --arch ) The architecture to build the SDK for, supported values are: x86_64
     --force ) Forces the script to remove SDK if it exists and rebuild it
 EOF
+}
+
+function get_podman_arch() {
+  case "$1" in
+    x86_64)
+      echo "amd64"
+      break
+      ;;
+    aarch64)
+      echo "arm64"
+      break
+      ;;
+    *)
+      break
+      ;;
+  esac
 }
 
 function ask_yes_or_no() {
@@ -130,6 +147,34 @@ if [[ "${BUILD_TARGET}" == "linux" ]]; then
       rsync -a --progress --delete --delete-delay --prune-empty-dirs /build/output/host/ /sdk/;
     "
     "${TARGET_SDK_LOCATION}/relocate-sdk.sh"
+    PODMAN_ARCH=$(get_podman_arch ${BUILD_ARCH})
+    if [[ -z "${PODMAN_ARCH}" ]]; then
+      echo "${BUILD_ARCH} not valid for building vulkan"
+    else
+      VULKAN_SDK_LOCATION=${TARGET_SDK_LOCATION}/${BUILD_ARCH}-neon-${BUILD_TARGET}-gnu/opt/vulkan
+      mkdir -p ${VULKAN_SDK_LOCATION}
+      podman build --build-arg ARCH=${PODMAN_ARCH} -t vulkan-sdk-builder-${PODMAN_ARCH} -f $(dirname "${0}")/vulkan-sdk-builder.dockerfile
+      podman run -i --rm \
+        -v "${VULKAN_SDK_LOCATION}:/sdk:z" \
+        -e FORCE_UNSAFE_CONFIGURE=1 \
+        -e HOME=/home \
+        --userns=keep-id \
+        -w /sdk \
+        neon-sdk-builder:latest -c "
+          wget https://sdk.lunarg.com/sdk/download/${VULKAN_SDK_VERSION}.0/linux/vulkansdk-linux-x86_64-${VULKAN_SDK_VERSION}.0.tar.xz
+
+          tar -xvf vulkansdk-linux-x86_64-${VULKAN_SDK_VERSION}.0.tar.xz \
+            ${VULKAN_SDK_VERSION}.0/setup-env.sh \
+            ${VULKAN_SDK_VERSION}.0/vulkansdk \
+            ${VULKAN_SDK_VERSION}.0/LICENSE.txt \
+            ${VULKAN_SDK_VERSION}.0/README.txt \
+            ${VULKAN_SDK_VERSION}.0/config/vk_layer_settings.txt
+
+          rm -f vulkansdk-linux-x86_64-${VULKAN_SDK_VERSION}.0.tar.xz
+          cd ${VULKAN_SDK_VERSION}.0
+          ./vulkansdk --skip-deps --maxjobs
+        "
+    fi
 else
   echo "The target ${BUILD_TARGET} is not supported"
   exit "${ERR_TARGET_NOT_SUPPORTED}"
