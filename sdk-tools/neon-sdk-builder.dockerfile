@@ -1,6 +1,5 @@
-ARG ARCH=amd64
 ARG OS_VERSION=8.10
-FROM ${ARCH}/almalinux:${OS_VERSION}
+FROM almalinux:${OS_VERSION}
 
 ENV MENUCONFIG_COLOR=blackbg
 
@@ -26,8 +25,6 @@ RUN dnf update -y \
         perl-ExtUtils-MakeMaker \
         perl-IPC-Cmd \
     && dnf clean all \
-    && mkdir -p /build /sdk \
-    && chmod 777 /build \
-    && echo ${OS_VERSION} > /etc/version_id
+    && mkdir -p /opt/build /opt/sdk
 
 ENTRYPOINT [ "/bin/bash" ]
