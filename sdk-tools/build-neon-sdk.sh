@@ -254,7 +254,19 @@ if [[ "${BUILD_TARGET}" == "linux" ]]; then
         volk \
         vma \
         vul
+
+      echo "Done building Vulkan SDK, note that LunarG and KHR Vulkan-Tools, as well as DXC, slang, and CDL, are excluded"
+      rm -rf source
+      
+      cd ${MOUNT_SDK}
+
+      echo "Setting up buildroot's environment-setup to source Vulkan SDK environment file"
+      SOURCE_VULKAN_ENV="source \${STAGING_DIR}/opt/vulkan/${VULKAN_SDK_VERSION}.0/setup-env"
+      if ! grep -qF "\${SOURCE_VULKAN_ENV}" environment-setup; then
+        echo "\${SOURCE_VULKAN_ENV}" >> environment-setup
+      fi
 EOF
+    echo "Done building the SDK, relocating it for the target machine"
     "${TARGET_SDK_LOCATION}/relocate-sdk.sh"
 else
   echo "The target ${BUILD_TARGET} is not supported"
