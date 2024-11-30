@@ -226,6 +226,8 @@ if [[ "${BUILD_TARGET}" == "linux" ]]; then
 
       cd ${VULKAN_SDK_VERSION}.0
 
+      SOURCE_VULKAN_ENV="source \${STAGING_DIR}/opt/vulkan/${VULKAN_SDK_VERSION}.0/setup-env.sh"
+      sed -i "s|^VULKAN_SDK=.*|VULKAN_SDK=/opt/vulkan/${VULKAN_SDK_VERSION}.0/${BUILD_ARCH}|" setup-env.sh
       source setup-env.sh
 
       cp -a vulkansdk vulkansdk.modified
@@ -244,6 +246,7 @@ if [[ "${BUILD_TARGET}" == "linux" ]]; then
         loader \
         layers \
         vulkan-extensionlayer \
+        lunarg-tools \
         shaderc \
         spirv-tools \
         glslang \
@@ -253,7 +256,8 @@ if [[ "${BUILD_TARGET}" == "linux" ]]; then
         vulkan-profiles \
         volk \
         vma \
-        vul
+        vul \
+        cdl
 
       echo "Done building Vulkan SDK, note that LunarG and KHR Vulkan-Tools, as well as DXC, slang, and CDL, are excluded"
       rm -rf source
@@ -261,7 +265,6 @@ if [[ "${BUILD_TARGET}" == "linux" ]]; then
       cd ${MOUNT_SDK}
 
       echo "Setting up buildroot's environment-setup to source Vulkan SDK environment file"
-      SOURCE_VULKAN_ENV="source \${STAGING_DIR}/opt/vulkan/${VULKAN_SDK_VERSION}.0/setup-env"
       if ! grep -qF "\${SOURCE_VULKAN_ENV}" environment-setup; then
         echo "\${SOURCE_VULKAN_ENV}" >> environment-setup
       fi
