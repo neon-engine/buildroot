@@ -226,6 +226,8 @@ if [[ "${BUILD_TARGET}" == "linux" ]]; then
 
       cd ${VULKAN_SDK_VERSION}.0
 
+      source setup-env.sh
+
       cp -a vulkansdk vulkansdk.modified
 
       echo "Workaround #1, since we're building vulkan for the target arch we need to set the toolchain file accoridngly"
@@ -237,17 +239,21 @@ if [[ "${BUILD_TARGET}" == "linux" ]]; then
         "s+-DCMAKE_BUILD_TYPE=+\${VULKAN_BUILD_REPLACE_ARGS}+g" \
         vulkansdk.modified
 
-      echo "Workaround #2, we are going to skip building DXC and Vulkan-Tools."
-      echo "It is currently not possible to build these in a cross-compile environment"
-      sed -i \
-        "s+BUILD_TOOLS=1+BUILD_TOOLS=0+g" \
-        vulkansdk.modified
-      
-      sed -i \
-        "s+BUILD_DXC=1+BUILD_DXC=0+g" \
-        vulkansdk.modified
-
-      ./vulkansdk.modified --skip-deps --maxjobs
+      ./vulkansdk.modified --skip-deps --maxjobs \
+        headers \
+        loader \
+        layers \
+        vulkan-extensionlayer \
+        shaderc \
+        spirv-tools \
+        glslang \
+        spirv-cross \
+        gfxrecon \
+        spirv-reflect \
+        vulkan-profiles \
+        volk \
+        vma \
+        vul
 EOF
     "${TARGET_SDK_LOCATION}/relocate-sdk.sh"
 else
